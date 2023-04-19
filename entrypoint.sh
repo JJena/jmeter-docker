@@ -15,7 +15,20 @@ fi
 
 # Execute JMeter command
 set -e
-freeMem=`awk '/MemAvailable/ { print int($2/1024) }' /proc/meminfo`
+#freeMem=`awk '/MemAvailable/ { print int($2/1024) }' /proc/meminfo`
+
+if [ $KUBERNETES_SERVICE_HOST ]
+then
+    #For K8s environment, the pod running the Jmeter container has cpu/memory limits. Formula for K8s freeMem is below.
+    freeMem=`cat /sys/fs/cgroup/memory/memory.limit_in_bytes|awk '{print int($1/1024/1024)}'`
+    echo "This is Kuberentes env"
+else
+    #For non-kubernets environment, formula for freeMem is below.
+    freeMem=`awk '/MemAvailable/ { print int($2/1024) }' /proc/meminfo`
+    echo "This is Non-Kuberentes env"
+fi
+
+echo "Free mem:$freeMem"
 
 [[ -z ${JVM_XMN} ]] && JVM_XMN=$(($freeMem/10*2))
 [[ -z ${JVM_XMS} ]] && JVM_XMS=$(($freeMem/10*8))
